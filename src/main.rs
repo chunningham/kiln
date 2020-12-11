@@ -8,7 +8,7 @@ fn main() {
     const PROCESS: &str = "process";
     const PACKAGE: &str = "package";
 
-    let matches = App::new("Kiln")
+    let matches = App::new("tzpkg")
         .version("0.1")
         .about("Package manager for the Tezos Ecosystem")
         .setting(AppSettings::SubcommandRequiredElseHelp)
