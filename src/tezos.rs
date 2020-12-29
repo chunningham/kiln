@@ -1,15 +1,11 @@
-use crate::error::Error;
+use async_std::prelude::*;
+use std::error::Error;
 
 pub struct TransactionData {}
 pub struct SerializedTransaction {}
 
-pub struct ChainData {}
-pub struct Node {}
 
-pub impl Default for ChainData {
-    fn default() -> ChainData {
-        ChainData {}
-    }
+const DEFAULT_NODE: &str = "https://delphinet.smartpy.io";
 }
 
 pub async fn serialize_transaction(tx: TransactionData, chain: Option<ChainData>, node: Option<Node>) -> Future<Result<SeralizedTransaction, Error>> {

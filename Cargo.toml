@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 clap = "2.33"
+surf = { version = "2.1", default-features = false, features = ["encoding", "h1-client", "middleware-logger"] }
+async-std = { version = "1.8", features = ["attributes"] }
