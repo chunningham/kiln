@@ -22,8 +22,33 @@ async fn get_bigmap_entry<T>(entry: &str, chain_id: &str, big_map_id: u32) -> Re
     todo!()
 }
 
-pub async fn broadcast_transaction(tx: SerializedTransaction, node: Option<Node>) ->Future<Result<(), Error>> {
-    todo!()
+/// Get Script Expression
+///
+/// Used for big map indexing
+/// frustratingly, seems totally undocumented
+/// this impl is transcribed from go-tezos
+/// https://github.com/goat-systems/go-tezos/blob/519084001470cc6fb17c2d79010bec47da4489ff/forge/forge.go#L1236
+fn get_script_expr(index: &str) -> String {
+    bs58::encode([
+        // prefix "expr"
+        [13u8, 44u8, 64u8, 27u8].as_ref(),
+        &{
+            let mut dig = VarBlake2b::new(32).unwrap();
+            dig.update([
+                // type confirmation bytes?
+                [5u8, 1u8].as_ref(),
+                // length as bytes
+                &hex::decode(format!("{:x}", index.len())).unwrap(),
+                // value bytes
+                index.as_bytes()
+            ].concat());
+            dig.finalize_boxed()
+        }
+    ].concat())
+        .with_check()
+        .into_string()
+}
+
 #[async_std::test]
 async fn basic_block_id_test() -> Result<(), Box<dyn Error>>{
     use crate::registry::CHAIN_ID;
@@ -44,4 +69,21 @@ async fn basic_bigmap_test() -> Result<(), Box<dyn Error>> {
     assert!(false);
     Ok(())
 }
+
+#[test]
+fn script_expr() {
+    // taken from the tezos Go implementation
+    let index = "Tezos Tacos Nachos";
+    println!("{:?}", [
+                // type confirmation bytes?
+                [5u8, 1u8].as_ref(),
+                // length num in bytes
+                &hex::decode(format!("{:x}", index.len())).unwrap(),
+                // value bytes
+                index.as_bytes()
+            ].concat());
+    assert_eq!(
+        "expruGmscHLuUazE7d79EepWCnDuPJreo8R87wsDGUgKAuH4E5ayEj",
+        get_script_expr("Tezos Tacos Nachos")
+    )
 }

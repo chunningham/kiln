@@ -10,3 +10,6 @@ edition = "2018"
 clap = "2.33"
 surf = { version = "2.1", default-features = false, features = ["encoding", "h1-client", "middleware-logger"] }
 async-std = { version = "1.8", features = ["attributes"] }
+bs58 = { version = "0.4", features = ["check"] }
+blake2 = "0.9"
+hex = "0.4"
