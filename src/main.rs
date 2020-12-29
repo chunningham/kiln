@@ -1,7 +1,14 @@
 extern crate clap;
+extern crate surf;
+extern crate async_std;
+use async_std::prelude::*;
 use clap::{App, AppSettings, Arg, SubCommand};
 
-fn main() {
+pub mod tezos;
+pub mod registry;
+
+#[async_std::main]
+async fn main() {
     const INSTALL: &str = "install";
     const START: &str = "start";
     const PS: &str = "ps";
