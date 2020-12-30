@@ -2,6 +2,7 @@ use async_std::prelude::*;
 use std::error::Error;
 use blake2::{VarBlake2b, digest::{Update, VariableOutput}};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use surf::StatusCode;
 
 
 pub struct TransactionData {}
@@ -30,13 +31,19 @@ async fn get_latest_block_id(chain_id: &str) -> Result<String, surf::Error> {
     Ok(blocks.first().unwrap().first().unwrap().to_owned())
 }
 
-async fn get_bigmap_entry<T: DeserializeOwned>(entry: &str, chain_id: &str, big_map_id: u32) -> Result<T, surf::Error> {
-    surf::get(format!("{}/chains/{}/blocks/head/context/big_maps/{}/{}",
+async fn get_bigmap_entry<T: DeserializeOwned>(entry: &str, chain_id: &str, big_map_id: u32) -> Result<Option<T>, surf::Error> {
+    match surf::get(format!("{}/chains/{}/blocks/head/context/big_maps/{}/{}",
                       DEFAULT_NODE,
                       chain_id,
                       big_map_id,
                       get_script_expr(entry)
-    )).await?.body_json().await
+    )).await?.body_json().await {
+        Ok(e) => Ok(Some(e)),
+        Err(e) => match e.status() {
+            StatusCode::InternalServerError => Ok(None),
+            _ => Err(e)
+        }
+    }
 }
 
 /// Get Script Expression
@@ -82,13 +89,13 @@ async fn basic_bigmap_test() -> Result<(), Box<dyn Error>> {
 
     assert_eq!(TEST_PACKAGE_HASH, get_script_expr(TEST_PACKAGE));
 
-    let entry: BigmapEntry = get_bigmap_entry(TEST_PACKAGE, CHAIN_ID, BIGMAP_ID).await?;
+    let entry: Option<BigmapEntry> = get_bigmap_entry(TEST_PACKAGE, CHAIN_ID, BIGMAP_ID).await?;
 
     assert_eq!(
-        BigmapEntry::Pair((
+        Some(BigmapEntry::Pair((
             ArgString { string: "tz1hd85kqYEcuG9JyVMYE3EGBukVEJqXAfNr".into() },
             ArgString { string: "test_package_path".into() }
-        )),
+        ))),
         entry
     );
 
