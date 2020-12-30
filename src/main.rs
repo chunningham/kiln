@@ -11,6 +11,7 @@ use clap::{App, AppSettings, Arg, SubCommand};
 
 pub mod tezos;
 pub mod registry;
+pub mod fetch;
 
 #[async_std::main]
 async fn main() {
