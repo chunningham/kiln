@@ -13,3 +13,4 @@ async-std = { version = "1.8", features = ["attributes"] }
 bs58 = { version = "0.4", features = ["check"] }
 blake2 = "0.9"
 hex = "0.4"
+serde = { version = "1.0", features = ["derive"] }
