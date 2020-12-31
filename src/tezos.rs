@@ -31,7 +31,7 @@ async fn get_latest_block_id(chain_id: &str) -> Result<String, surf::Error> {
     Ok(blocks.first().unwrap().first().unwrap().to_owned())
 }
 
-async fn get_bigmap_entry<T: DeserializeOwned>(entry: &str, chain_id: &str, big_map_id: u32) -> Result<Option<T>, surf::Error> {
+pub async fn get_bigmap_entry<T: DeserializeOwned>(entry: &str, chain_id: &str, big_map_id: u32) -> Result<Option<T>, surf::Error> {
     match surf::get(format!("{}/chains/{}/blocks/head/context/big_maps/{}/{}",
                       DEFAULT_NODE,
                       chain_id,
@@ -40,6 +40,8 @@ async fn get_bigmap_entry<T: DeserializeOwned>(entry: &str, chain_id: &str, big_
     )).await?.body_json().await {
         Ok(e) => Ok(Some(e)),
         Err(e) => match e.status() {
+            // TODO this is what is returned by surf as a "generic" error, an actual 500 will
+            // look like a "no package found" if it occurs
             StatusCode::InternalServerError => Ok(None),
             _ => Err(e)
         }

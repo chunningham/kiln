@@ -5,6 +5,7 @@ extern crate blake2;
 extern crate bs58;
 extern crate hex;
 extern crate serde;
+extern crate anyhow;
 
 use async_std::prelude::*;
 use clap::{App, AppSettings, Arg, SubCommand};
