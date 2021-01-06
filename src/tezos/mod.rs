@@ -2,11 +2,33 @@ use async_std::prelude::*;
 use std::error::Error;
 use blake2::{VarBlake2b, digest::{Update, VariableOutput}};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use surf::StatusCode;
+use surf::{StatusCode, Url};
+use std::fmt;
 
 
 pub struct TransactionData {}
 pub struct SerializedTransaction {}
+
+#[derive(Debug, PartialEq)]
+pub struct RpcApiInfo(Url);
+
+impl Default for RpcApiInfo {
+    fn default() -> Self {
+        Self ("https://delphinet.smartpy.io/chains/main/blocks/head".parse().unwrap())
+    }
+}
+
+impl AsRef<str> for RpcApiInfo {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
+impl fmt::Display for RpcApiInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct ArgString {
@@ -19,24 +41,14 @@ pub struct ArgString {
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(tag = "prim", content = "args")]
 pub enum BigmapEntry {
-    Pair((ArgString, ArgString))
+    Pair((ArgString, ArgString)),
 }
 
-const DEFAULT_NODE: &str = "https://delphinet.smartpy.io";
-
-// actually unnecessary but a good smoke check
-async fn get_latest_block_id(chain_id: &str) -> Result<String, surf::Error> {
-    let res_body = surf::get(format!("{}/chains/{}/blocks?length=1", DEFAULT_NODE, chain_id)).await?.take_body();
-    let blocks: Vec<Vec<String>> = res_body.into_json().await?;
-    Ok(blocks.first().unwrap().first().unwrap().to_owned())
-}
-
-pub async fn get_bigmap_entry<T: DeserializeOwned>(entry: &str, chain_id: &str, big_map_id: u32) -> Result<Option<T>, surf::Error> {
-    match surf::get(format!("{}/chains/{}/blocks/head/context/big_maps/{}/{}",
-                      DEFAULT_NODE,
-                      chain_id,
-                      big_map_id,
-                      get_script_expr(entry)
+pub async fn get_bigmap_entry<T: DeserializeOwned>(node: &RpcApiInfo, entry: &str, big_map_id: u32) -> Result<Option<T>, surf::Error> {
+    match surf::get(format!("{}/context/big_maps/{}/{}",
+                            node,
+                            big_map_id,
+                            get_script_expr(entry)
     )).await?.body_json().await {
         Ok(e) => Ok(Some(e)),
         Err(e) => match e.status() {
@@ -51,7 +63,6 @@ pub async fn get_bigmap_entry<T: DeserializeOwned>(entry: &str, chain_id: &str, 
 /// Get Script Expression
 ///
 /// Used for big map indexing
-/// frustratingly, seems totally undocumented
 /// this impl is transcribed from go-tezos
 /// https://github.com/goat-systems/go-tezos/blob/master/forge/forge.go#L1236
 fn get_script_expr(index: &str) -> String {
@@ -76,14 +87,6 @@ fn get_script_expr(index: &str) -> String {
 }
 
 #[async_std::test]
-async fn basic_block_id_test() -> Result<(), Box<dyn Error>>{
-    use crate::registry::CHAIN_ID;
-
-    let _block_id = get_latest_block_id(CHAIN_ID).await?;
-    Ok(())
-}
-
-#[async_std::test]
 async fn basic_bigmap_test() -> Result<(), Box<dyn Error>> {
     use crate::registry::*;
     const TEST_PACKAGE_HASH: &str = "exprtgUM4vqybphPru7cgDqJSjJrWd6tYpDwgivFjn1vKVpARJv1ZN";
@@ -91,7 +94,7 @@ async fn basic_bigmap_test() -> Result<(), Box<dyn Error>> {
 
     assert_eq!(TEST_PACKAGE_HASH, get_script_expr(TEST_PACKAGE));
 
-    let entry: Option<BigmapEntry> = get_bigmap_entry(TEST_PACKAGE, CHAIN_ID, BIGMAP_ID).await?;
+    let entry: Option<BigmapEntry> = get_bigmap_entry(&RpcApiInfo::default(), TEST_PACKAGE, BIGMAP_ID).await?;
 
     assert_eq!(
         Some(BigmapEntry::Pair((
