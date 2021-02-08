@@ -1,21 +1,19 @@
-extern crate clap;
-extern crate surf;
+extern crate anyhow;
 extern crate async_std;
 extern crate blake2;
 extern crate bs58;
+extern crate clap;
 extern crate hex;
-extern crate serde;
-extern crate anyhow;
 extern crate keysd_rs;
+extern crate serde;
 
 use async_std::prelude::*;
 use clap::{App, AppSettings, Arg, SubCommand};
 
-pub mod tezos;
-pub mod registry;
 pub mod fetch;
 pub mod package;
-pub mod signing;
+pub mod registry;
+pub mod tezos;
 
 #[async_std::main]
 async fn main() {
